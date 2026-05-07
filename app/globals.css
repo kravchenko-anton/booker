@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  /* Пергамент — фон, основа всего */
+  --color-parchment: #FAF6F0;
+
+  /* Пламя — главный акцент */
+  --color-flame: #E07A2F;
+
+  /* Терракота — второй акцент */
+  --color-terracotta: #C4513D;
+
+  /* Золото — заголовки, подсветки */
+  --color-gold: #D4A853;
+
+  /* Кофе — вторичный текст */
+  --color-coffee: #8B6B4A;
+
+  /* Чернила — основной текст */
+  --color-ink: #2C2218;
+
+  /* Папирус — карточки, секции */
+  --color-papyrus: #EDE6DA;
+
+  /* Янтарь — hover, бейджи */
+  --color-amber-warm: #F2C87A;
+}
+
+.unselectable {
+  user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
