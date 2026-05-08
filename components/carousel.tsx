@@ -1,5 +1,6 @@
 'use client'
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import myData from '@/public/allbooks.json';
 
 export type Book = {
 	image: string;
@@ -7,115 +8,9 @@ export type Book = {
 	author: string;
 	rating: number;
 	ratings_count: number;
+	goodreads_url?: string;
+	categories?: string[];
 };
-
-export const DEFAULT_BOOKS: Book[] = [
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1635827409i/20342617.jpg",
-		title: "Just Mercy",
-		author: "Bryan Stevenson",
-		rating: 4.62,
-		ratings_count: 266921,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1433168047i/5546.jpg",
-		title: "The Feynman Lectures on Physics",
-		author: "Richard P. Feynman",
-		rating: 4.61,
-		ratings_count: 8135,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1403194611i/1111.jpg",
-		title: "The Power Broker",
-		author: "Robert A. Caro",
-		rating: 4.53,
-		ratings_count: 30211,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1408324949i/20696006.jpg",
-		title: "Being Mortal",
-		author: "Atul Gawande",
-		rating: 4.49,
-		ratings_count: 222024,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1391032527i/43713.jpg",
-		title: "Structure and Interpretation of Computer Programs",
-		author: "Harold Abelson",
-		rating: 4.47,
-		ratings_count: 4869,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1652105350i/59575939.jpg",
-		title: "An Immense World",
-		author: "Ed Yong",
-		rating: 4.46,
-		ratings_count: 37271,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1457284880i/27220736.jpg",
-		title: "Shoe Dog",
-		author: "Phil Knight",
-		rating: 4.45,
-		ratings_count: 378577,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1522685770i/38799469.jpg",
-		title: "Bad Blood",
-		author: "John Carreyrou",
-		rating: 4.4,
-		ratings_count: 285046,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1387744370i/944652.jpg",
-		title: "Poor Charlie's Almanack",
-		author: "Charles T. Munger",
-		rating: 4.39,
-		ratings_count: 18557,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1535419394i/4069.jpg",
-		title: "Man's Search for Meaning",
-		author: "Viktor E. Frankl",
-		rating: 4.37,
-		ratings_count: 905799,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1517732866i/31170723.jpg",
-		title: "Behave",
-		author: "Robert M. Sapolsky",
-		rating: 4.37,
-		ratings_count: 33012,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1386925124i/71730.jpg",
-		title: "Nonviolent Communication",
-		author: "Marshall B. Rosenberg",
-		rating: 4.33,
-		ratings_count: 50603,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1283195046i/210404.jpg",
-		title: "A Sand County Almanac",
-		author: "Aldo Leopold",
-		rating: 4.31,
-		ratings_count: 37025,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1553691804i/17349.jpg",
-		title: "The Demon-Haunted World",
-		author: "Carl Sagan",
-		rating: 4.29,
-		ratings_count: 81620,
-	},
-	{
-		image: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1391026083i/28815.jpg",
-		title: "Influence",
-		author: "Robert B. Cialdini",
-		rating: 4.21,
-		ratings_count: 180389,
-	},
-];
 
 const StarIcon = () => (
 	<svg width="14" height="14" viewBox="0 0 24 24" fill="#D4A853" aria-hidden="true">
@@ -136,12 +31,15 @@ const ChevronRight = ({ size = 18 }: { size?: number }) => (
 );
 
 function formatCount(n: number) {
-	return n.toLocaleString("en-US");
+	return n ? n.toLocaleString("en-US") : "0";
 }
 
-function BookCard({ book }: { book: Book }) {
+export function BookCard({ book }: { book: Book }) {
 	return (
-		<article className="group flex-none w-[150px] sm:w-[150px] lg:w-[150px] xl:w-[150px] cursor-pointer">
+		<article 
+			onClick={() => book.goodreads_url && window.open(book.goodreads_url, '_blank')}
+			className="group flex-none w-[150px] sm:w-[150px] lg:w-[150px] xl:w-[150px] cursor-pointer"
+		>
 			<div className="overflow-hidden rounded-[5px] shadow-[0_2px_6px_rgba(44,34,24,0.18),0_1px_3px_rgba(44,34,24,0.10)] bg-papyrus">
 				<img
 					src={book.image}
@@ -154,13 +52,13 @@ function BookCard({ book }: { book: Book }) {
 				<h3 className="text-[16px] sm:text-[17px] lg:text-[18px] leading-[1.3] font-semibold text-ink line-clamp-2 mb-1 group-hover:text-flame transition-colors">
 					{book.title}
 				</h3>
-				<p className="text-[14px] sm:text-[15px] text-coffee leading-[1.3] mb-2">
+				<p className="text-[14px] sm:text-[15px] text-coffee leading-[1.3] mb-2 truncate">
 					{book.author}
 				</p>
 				<div className="flex items-center gap-1.5">
 					<StarIcon />
 					<span className="text-[14px] sm:text-[15px] font-medium text-ink">
-						{book.rating.toFixed(2)}
+						{book.rating ? book.rating.toFixed(2) : "N/A"}
 					</span>
 					<span className="text-[13px] sm:text-[14px] text-coffee">
 						({formatCount(book.ratings_count)})
@@ -178,10 +76,34 @@ type SliderProps = {
 };
 
 export default function EssentialReads({
-	books = DEFAULT_BOOKS,
+	books,
 	title = "The hottest book in every category, this week.",
 	subtitle = "A weekly cut of what the world's sharpest readers are picking up right now — one essential title per domain, refreshed every Sunday.",
 }: SliderProps = {}) {
+	const displayBooks = useMemo(() => {
+		if (books && books.length > 0) return books;
+		
+		const groups: Record<string, Book[]> = {};
+		(myData as Book[]).forEach(p => {
+			const cat = p.categories?.[0] || 'other';
+			if (!groups[cat]) groups[cat] = [];
+			groups[cat].push(p);
+		});
+		
+		const topBooks: Book[] = [];
+		for (const cat in groups) {
+			const catBooks = groups[cat];
+			// Find the most popular book in this category based on ratings_count
+			const topBook = catBooks.reduce((prev, current) => 
+				(prev.ratings_count > current.ratings_count) ? prev : current
+			);
+			topBooks.push(topBook);
+		}
+		
+		// Sort the top books by overall ratings_count descending
+		return topBooks.sort((a, b) => b.ratings_count - a.ratings_count);
+	}, [books]);
+
 	const trackRef = useRef<HTMLDivElement>(null);
 	const [canPrev, setCanPrev] = useState(false);
 	const [canNext, setCanNext] = useState(true);
@@ -212,9 +134,9 @@ export default function EssentialReads({
 	};
 
 	return (
-		<section className="bg-parchment min-h-screen flex items-center py-20 sm:py-24 lg:py-28 border-y border-ink/10">
-			<div className="w-full lg:w-[80%] xl:w-[80%] 2xl:w-[80%] max-w-[1600px] mx-auto px-6 sm:px-8">
-				<div className="flex justify-between items-end gap-6 mb-12 lg:mb-16">
+		<section className="bg-parchment min-h-screen flex items-center py-20 sm:py-24 lg:py-28 border-y border-ink/10 overflow-hidden">
+			<div className="w-full max-w-[1600px] mx-auto">
+				<div className="flex flex-col lg:flex-row justify-between lg:items-end gap-6 mb-12 lg:mb-16 px-6 sm:px-8 lg:px-12 xl:px-16">
 					<div className="max-w-[820px]">
 						<h2
 							className="text-[36px] sm:text-[48px] lg:text-[60px] xl:text-[68px] leading-[1.05] font-normal text-ink m-0 tracking-[-0.02em]"
@@ -227,7 +149,7 @@ export default function EssentialReads({
 						</p>
 					</div>
 
-					<div className="flex items-center gap-2 lg:gap-3 flex-none">
+					<div className="flex items-center gap-2 lg:gap-3 flex-none hidden lg:flex">
 						<button
 							onClick={() => scrollByPage(-1)}
 							disabled={!canPrev}
@@ -249,13 +171,14 @@ export default function EssentialReads({
 
 				<div
 					ref={trackRef}
-					className="flex gap-5 sm:gap-6 lg:gap-7 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+					className="flex gap-5 sm:gap-6 lg:gap-7 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden px-6 sm:px-8 lg:px-12 xl:px-16"
 				>
-					{books.map((book) => (
-						<div key={book.title} className="snap-start">
+					{displayBooks.map((book) => (
+						<div key={book.title} className="snap-start shrink-0">
 							<BookCard book={book} />
 						</div>
 					))}
+					<div className="shrink-0 w-1 lg:hidden"></div>
 				</div>
 			</div>
 		</section>

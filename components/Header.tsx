@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function BookerHeader() {
+export default function BestlibHeader() {
   return (
     <div className="flex items-center justify-between p-6 border-b border-ink/20 bg-parchment font-sans">
       <a
@@ -8,8 +8,8 @@ export default function BookerHeader() {
         href="/"
         className="no-underline text-inherit cursor-pointer text-3xl leading-none tracking-tight text-ink"
       >
-        <span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600 }}>Book</span>
-        <span style={{ fontFamily: 'var(--font-dm-serif), serif', fontStyle: 'italic' }}>er</span>
+        <span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600 }}>Best</span>
+        <span style={{ fontFamily: 'var(--font-dm-serif), serif', fontStyle: 'italic' }}>lib</span>
       </a>
 
       <a

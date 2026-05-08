@@ -5,7 +5,7 @@ const SERIF = {
 	fontFeatureSettings: '"pnum", "lnum"',
 } as const;
 
-export default function BookerHero() {
+export default function BestlibHero() {
 	return (
 		<section className="relative bg-papyrus font-sans py-24 sm:py-32 lg:py-40 px-6 sm:px-10 lg:px-16">
 			<div className="max-w-[1200px] mx-auto">
@@ -13,7 +13,7 @@ export default function BookerHero() {
 					className="m-0 font-normal text-ink leading-[1.04] tracking-[-0.025em] text-[48px] sm:text-[72px] lg:text-[100px] xl:text-[112px]"
 					style={SERIF}
 				>
-					Booker turns readers
+					Bestlib turns readers
 					<br />
 					into <span className="italic">formidable thinkers</span>
 					<sup className="text-[0.32em] font-normal align-super ml-0.5 tracking-tight">

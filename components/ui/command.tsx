@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils/utils"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
 import {
   InputGroup,
   InputGroupAddon,
-} from "@/components/ui/input-group"
+} from "./input-group"
 import { SearchIcon, CheckIcon } from "lucide-react"
 
 function Command({
@@ -57,7 +57,7 @@ function CommandDialog({
           "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
           className
         )}
-        showCloseButton={showCloseButton}
+        closeButton={showCloseButton}
       >
         {children}
       </DialogContent>

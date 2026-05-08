@@ -4,7 +4,7 @@ import "./globals.css";
 import { PostHogProvider } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Booker",
+  title: "Bestlib",
   description: "Next version of book searcher",
 };
 

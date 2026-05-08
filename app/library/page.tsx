@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useRef, useState, memo, useMemo } from 'react'
-import Link from 'next/link'
 import myData from '@/public/allbooks.json';
+import { BookCard, type Book } from '@/components/carousel';
 
 export type Project = {
 	image: string
@@ -25,7 +25,6 @@ const MIN_ZOOM = 0.05
 const MAX_ZOOM = 1.2
 const LOD_THRESHOLD = 0.2
 const GALAXY_STYLES: Record<string, { badge: string; border: string; glow: string; hexBg: string }> = {
-	// --- Фиолетово-розовый спектр (Разум) ---
 	psychology: {
 		badge: "bg-violet-600 text-white",
 		border: "border-violet-500",
@@ -164,7 +163,7 @@ function seededRandom(seed: number) {
 	return x - Math.floor(x);
 }
 
-export function InfiniteCanvas() {
+function InfiniteCanvas() {
 	const projects = myData as Project[]
 	
 	const { booksMap, categoriesMap, worldBounds } = useMemo(() => {
@@ -241,19 +240,35 @@ export function InfiniteCanvas() {
 	const dragging = useRef(false)
 	const initialized = useRef(false)
 	
+	const isAutoZooming = useRef(false)
+	const ensureRef = useRef<() => void>(() => {})
+	const isDraggingThresholdMet = useRef(false)
+	const pointerDownPos = useRef({ x: 0, y: 0 })
+	
 	const [visibleCells, setVisibleCells] = useState<PlacedProject[]>([])
 	
 	const zoomToCategory = (cx: number, cy: number) => {
 		if (!hostRef.current) return;
 		const w = hostRef.current.clientWidth / 2;
 		const h = hostRef.current.clientHeight / 2;
-		const targetScale = LOD_THRESHOLD + 0.05;
+		const targetScale = 0.8;
 		
 		target.current = {
 			x: w - cx * targetScale,
 			y: h - cy * targetScale,
 			scale: targetScale
 		};
+		isAutoZooming.current = true;
+		ensureRef.current();
+	}
+	
+	const zoomOut = () => {
+		if (!hostRef.current) return;
+		const w = hostRef.current.clientWidth / 2;
+		const h = hostRef.current.clientHeight / 2;
+		target.current = { x: w, y: h, scale: MIN_ZOOM };
+		isAutoZooming.current = true;
+		ensureRef.current();
 	}
 	
 	useEffect(() => {
@@ -332,6 +347,7 @@ export function InfiniteCanvas() {
 		}
 		
 		const ensure = () => { if (!raf) raf = requestAnimationFrame(tick) }
+		ensureRef.current = ensure;
 		
 		const tick = () => {
 			raf = 0
@@ -346,9 +362,19 @@ export function InfiniteCanvas() {
 			const ldy = target.current.y - display.current.y
 			const lds = target.current.scale - display.current.scale
 			
-			display.current.x += ldx * LERP
-			display.current.y += ldy * LERP
-			display.current.scale += lds * ZOOM_LERP
+			let currentLerp = LERP;
+			let currentZoomLerp = ZOOM_LERP;
+			if (isAutoZooming.current) {
+				currentLerp = 0.03;
+				currentZoomLerp = 0.03;
+				if (Math.abs(ldx) < 5 && Math.abs(ldy) < 5 && Math.abs(lds) < 0.005) {
+					isAutoZooming.current = false;
+				}
+			}
+			
+			display.current.x += ldx * currentLerp
+			display.current.y += ldy * currentLerp
+			display.current.scale += lds * currentZoomLerp
 			
 			if (Math.abs(ldx) < 0.05) display.current.x = target.current.x
 			if (Math.abs(ldy) < 0.05) display.current.y = target.current.y
@@ -370,9 +396,10 @@ export function InfiniteCanvas() {
 		}
 		
 		const onPointerDown = (e: PointerEvent) => {
-			if ((e.target as HTMLElement).closest('.interactive-node')) return;
 			dragging.current = true
-			host.setPointerCapture(e.pointerId)
+			isAutoZooming.current = false
+			isDraggingThresholdMet.current = false
+			pointerDownPos.current = { x: e.clientX, y: e.clientY }
 			lastPx = e.clientX
 			lastPy = e.clientY
 			lastPt = performance.now()
@@ -382,6 +409,17 @@ export function InfiniteCanvas() {
 		
 		const onPointerMove = (e: PointerEvent) => {
 			if (!dragging.current) return
+			
+			if (!isDraggingThresholdMet.current) {
+				const dist = Math.hypot(e.clientX - pointerDownPos.current.x, e.clientY - pointerDownPos.current.y);
+				if (dist > 5) {
+					isDraggingThresholdMet.current = true;
+					try { host.setPointerCapture(e.pointerId); } catch(e) {}
+				} else {
+					return; // wait until threshold met
+				}
+			}
+			
 			const now = performance.now()
 			const dx = e.clientX - lastPx
 			const dy = e.clientY - lastPy
@@ -403,15 +441,26 @@ export function InfiniteCanvas() {
 			ensure()
 		}
 		
-		const onPointerUp = () => {
+		const onPointerUp = (e: PointerEvent) => {
 			if (!dragging.current) return
 			dragging.current = false
+			if (host.hasPointerCapture(e.pointerId)) {
+				try { host.releasePointerCapture(e.pointerId); } catch(e) {}
+			}
 			constrainTarget();
 			ensure()
 		}
 		
+		const onClickCapture = (e: MouseEvent) => {
+			if (isDraggingThresholdMet.current) {
+				e.stopPropagation();
+				e.preventDefault();
+			}
+		}
+		
 		const onWheel = (e: WheelEvent) => {
 			e.preventDefault();
+			isAutoZooming.current = false;
 			const zoomSensitivity = 0.002;
 			const delta = -e.deltaY * zoomSensitivity;
 			
@@ -437,6 +486,7 @@ export function InfiniteCanvas() {
 		host.addEventListener('pointermove', onPointerMove)
 		host.addEventListener('pointerup', onPointerUp)
 		host.addEventListener('pointercancel', onPointerUp)
+		host.addEventListener('click', onClickCapture, { capture: true })
 		host.addEventListener('wheel', onWheel, { passive: false })
 		window.addEventListener('resize', onResize)
 		
@@ -450,6 +500,7 @@ export function InfiniteCanvas() {
 			host.removeEventListener('pointermove', onPointerMove)
 			host.removeEventListener('pointerup', onPointerUp)
 			host.removeEventListener('pointercancel', onPointerUp)
+			host.removeEventListener('click', onClickCapture, { capture: true })
 			host.removeEventListener('wheel', onWheel)
 			window.removeEventListener('resize', onResize)
 		}
@@ -475,8 +526,8 @@ export function InfiniteCanvas() {
 
 				className="no-underline bg-papyrus p-4 top-5 left-5 rounded-lg absolute text-inherit cursor-pointer text-3xl leading-none tracking-tight text-ink"
 			>
-				<span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600 }}>Book</span>
-				<span style={{ fontFamily: 'var(--font-dm-serif), serif', fontStyle: 'italic' }}>er</span>
+				<span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600 }}>Best</span>
+				<span style={{ fontFamily: 'var(--font-dm-serif), serif', fontStyle: 'italic' }}>lib</span>
 			</div>
 			<div
 				ref={layerRef}
@@ -508,7 +559,7 @@ const CategoryHexagon = memo(function CategoryHexagon({
 			data-x={category.x}
 			data-y={category.y}
 			onClick={onClick}
-			className={`interactive-node rounded-full absolute flex flex-col items-center justify-center cursor-pointer transition-all duration-700 hover:scale-105 ${style.hexBg} ${style.glow} border-4 shadow-xl`}
+			className={`rounded-full absolute flex flex-col items-center justify-center cursor-pointer transition-all duration-700 hover:scale-105 ${style.hexBg} ${style.glow} border-4 shadow-xl`}
 			style={{
 				width: 4000,
 				height: 4000,
@@ -531,7 +582,6 @@ const ProjectCell = memo(function ProjectCell({
 	return (
 		<div
 			onClick={(e) => {
-				// redirect to link
 				e.stopPropagation();
 				window.open(link, '_blank');
 			}}
@@ -579,5 +629,65 @@ const ProjectCell = memo(function ProjectCell({
 	);
 });
 
-export default InfiniteCanvas;
+function MobileEditorialView() {
+	const projects = myData as Project[];
+	
+	const categories = useMemo(() => {
+		const groups: Record<string, Project[]> = {};
+		projects.forEach(p => {
+			const cat = p.categories?.[0] || 'other';
+			if (!groups[cat]) groups[cat] = [];
+			groups[cat].push(p);
+		});
+		return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+	}, [projects]);
+
+	return (
+		<div className="bg-parchment min-h-screen pb-20 font-sans">
+			<div className="p-6 sticky top-0 bg-parchment/90 backdrop-blur z-50 border-b border-ink/10 flex justify-between items-center">
+				<div onClick={() => window.location.href = '/'} className="cursor-pointer text-2xl leading-none tracking-tight text-ink">
+					<span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600 }}>Best</span>
+					<span style={{ fontFamily: 'var(--font-dm-serif), serif', fontStyle: 'italic' }}>lib</span>
+				</div>
+			</div>
+
+			<div className="p-0 pt-6">
+				<div>
+					{categories.map(([catName, books]) => {
+						return (
+							<div key={catName} className="mb-12">
+								<div className="flex items-center justify-between mb-5 px-6">
+									<h2 className="text-xl font-bold text-ink capitalize" style={{ fontFamily: 'var(--font-fraunces), serif' }}>{catName}</h2>
+								</div>
+								
+								<div className="flex overflow-x-auto gap-4 pb-4 scroll-pl-6 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] before:shrink-0 before:w-2 after:shrink-0 after:w-2">
+									{books.map((book) => (
+										<div key={book.title} className="snap-start shrink-0">
+											<BookCard book={book as unknown as Book} />
+										</div>
+									))}
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export default function LibraryPage() {
+	const [isMobile, setIsMobile] = useState<boolean | null>(null);
+
+	useEffect(() => {
+		const checkMobile = () => setIsMobile(window.innerWidth < 768);
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	}, []);
+
+	if (isMobile === null) return null; // Avoid hydration mismatch
+
+	return isMobile ? <MobileEditorialView /> : <InfiniteCanvas />;
+}
 
