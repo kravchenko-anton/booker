@@ -134,9 +134,9 @@ export default function EssentialReads({
 	};
 
 	return (
-		<section className="bg-parchment min-h-screen flex items-center py-20 sm:py-24 lg:py-28 border-y border-ink/10 overflow-hidden">
-			<div className="w-full max-w-[1600px] mx-auto">
-				<div className="flex flex-col lg:flex-row justify-between lg:items-end gap-6 mb-12 lg:mb-16 px-6 sm:px-8 lg:px-12 xl:px-16">
+		<section className="bg-parchment min-h-screen flex items-center py-20 sm:py-24 lg:py-28 border-y border-ink/10">
+			<div className="w-full lg:w-[80%] xl:w-[80%] 2xl:w-[80%] max-w-[1600px] mx-auto px-6 sm:px-8">
+				<div className="flex justify-between items-end gap-6 mb-12 lg:mb-16">
 					<div className="max-w-[820px]">
 						<h2
 							className="text-[36px] sm:text-[48px] lg:text-[60px] xl:text-[68px] leading-[1.05] font-normal text-ink m-0 tracking-[-0.02em]"
@@ -149,7 +149,7 @@ export default function EssentialReads({
 						</p>
 					</div>
 
-					<div className="flex items-center gap-2 lg:gap-3 flex-none hidden lg:flex">
+					<div className="flex items-center gap-2 lg:gap-3 flex-none">
 						<button
 							onClick={() => scrollByPage(-1)}
 							disabled={!canPrev}
@@ -171,14 +171,13 @@ export default function EssentialReads({
 
 				<div
 					ref={trackRef}
-					className="flex gap-5 sm:gap-6 lg:gap-7 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden px-6 sm:px-8 lg:px-12 xl:px-16"
+					className="flex gap-5 sm:gap-6 lg:gap-7 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
 				>
 					{displayBooks.map((book) => (
-						<div key={book.title} className="snap-start shrink-0">
+						<div key={book.title} className="snap-start">
 							<BookCard book={book} />
 						</div>
 					))}
-					<div className="shrink-0 w-1 lg:hidden"></div>
 				</div>
 			</div>
 		</section>

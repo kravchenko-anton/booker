@@ -90,6 +90,7 @@ function Cover({ book, idx }: { book: Book; idx: number }) {
 					className="absolute inset-0 w-full h-full object-cover"
 					onError={() => setFailed(true)}
 					loading="lazy"
+					referrerPolicy="no-referrer"
 				/>
 			)}
 			{!useImage && (

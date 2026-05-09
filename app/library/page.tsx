@@ -574,10 +574,31 @@ const CategoryHexagon = memo(function CategoryHexagon({
 	)
 });
 
+const FALLBACK_PALETTE = [
+	{ bg: "#2C2218", text: "#FAF6F0", rule: "#D4A853" },
+	{ bg: "#C4513D", text: "#FAF6F0", rule: "#F2C87A" },
+	{ bg: "#8B6B4A", text: "#FAF6F0", rule: "#F2C87A" },
+	{ bg: "#D4A853", text: "#2C2218", rule: "#2C2218" },
+	{ bg: "#EDE6DA", text: "#2C2218", rule: "#E07A2F" },
+	{ bg: "#E07A2F", text: "#FAF6F0", rule: "#F2C87A" },
+	{ bg: "#F2C87A", text: "#2C2218", rule: "#C4513D" },
+];
+
 const ProjectCell = memo(function ProjectCell({
 	                                              x, y, project, category, link
                                               }: { x: number; y: number; project: Project; category: string, link: string }) {
 	const style = GALAXY_STYLES[category] || GALAXY_STYLES.default;
+	const [failed, setFailed] = useState(!project.image);
+
+	const paletteIndex = useMemo(() => {
+		let hash = 0;
+		for (let i = 0; i < project.title.length; i++) {
+			hash = project.title.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		return Math.abs(hash);
+	}, [project.title]);
+
+	const c = FALLBACK_PALETTE[paletteIndex % FALLBACK_PALETTE.length];
 	
 	return (
 		<div
@@ -604,13 +625,43 @@ const ProjectCell = memo(function ProjectCell({
 			</div>
 			
 			<div className="flex-1 flex items-center justify-center p-2">
-				<img
-					src={project.image}
-					width={CELL_W * 0.4}
-					height={CELL_H * 0.4}
-					alt={project.title}
-					className="pointer-events-none object-contain rounded-sm drop-shadow-lg"
-				/>
+				{!failed ? (
+					<img
+						src={project.image}
+						width={CELL_W * 0.4}
+						height={CELL_H * 0.4}
+						alt={project.title}
+						referrerPolicy="no-referrer"
+						onError={() => setFailed(true)}
+						className="pointer-events-none object-contain rounded-sm drop-shadow-lg"
+					/>
+				) : (
+					<div
+						className="relative flex flex-col justify-between p-3 rounded-sm shadow-md overflow-hidden"
+						style={{ 
+							background: c.bg, 
+							color: c.text,
+							width: CELL_W * 0.4,
+							height: CELL_H * 0.55 // Slightly taller for better proportions
+						}}
+					>
+						<span className="text-[6px] uppercase tracking-[0.1em] opacity-70 leading-tight">
+							{project.author.split(" ").slice(-1)[0]}
+						</span>
+						<div className="flex flex-col items-center justify-center text-center flex-1 px-0.5">
+							<span
+								className="text-[9px] leading-[1.1] line-clamp-4 font-bold"
+								style={{ fontFamily: "var(--font-fraunces), serif" }}
+							>
+								{project.title}
+							</span>
+							<div className="w-3 h-px mt-1.5" style={{ background: c.rule }} />
+						</div>
+						{/* Book spine effect */}
+						<div className="absolute inset-y-0 left-0 w-px bg-black/20" />
+						<div className="absolute inset-y-0 right-0 w-px bg-white/10" />
+					</div>
+				)}
 			</div>
 			
 			<div className="px-3.5 pb-3.5 flex text-center flex-col gap-1">
